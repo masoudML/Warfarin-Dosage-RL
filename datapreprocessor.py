@@ -205,3 +205,14 @@ class DataPreProcessor(object):
             plt.savefig('RFFeatureRankingPlot.png')
             plt.clf()
 
+
+    def loadAndPrepData(self):
+        traindata = self.dataLoadingandExplore()
+        ## transform Categorical Variables to label encoding - (label encoding is better for Tree Based Regression)
+        X, Y, = self.encodeCategoricalVariables(traindata)
+        ### one hot encoding for Multiple Linear Regression and Regularized Mulitple LR
+        # X_onehot = oneHotEncoding(traindata.loc[:, traindata.columns != 'Therapeutic Dose of Warfarin'])
+        ### split train data into train and hold out validation sets
+        X_train, X_val, y_train, y_val = train_test_split(X, Y, test_size=0.1, random_state=1)
+
+        return (X_train, X_val, y_train, y_val)
