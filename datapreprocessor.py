@@ -182,7 +182,7 @@ class DataPreProcessor(object):
 
     def performFeatureAnalysisUsingRandomForest(self, X_train, y_train, plot_rankings=False):
         #### Feature Importance Rankings using Random Forest
-        RF_model = RandomForestClassifier(n_estimators=50,
+        RF_model = RandomForestRegressor(n_estimators=50,
                                           random_state=1,
                                           min_samples_leaf=8,
                                           max_depth=6,

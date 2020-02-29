@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
@@ -49,8 +49,8 @@ class ContextualRandomForestSLPolicy(ContextualPolicy):
             'max_depth': [5, 6, 7],
         }
 
-        RF_model = RandomForestClassifier(random_state=1,
-                                          verbose=0)
+        RF_model = RandomForestRegressor(random_state=1,
+                                          verbose=0)  ### we can change that to regression once we discritize the labels
 
         RF_Tuned = GridSearchCV(estimator=RF_model, param_grid=param_grid, cv=StratifiedKFold(3))
         RF_Tuned.fit(self.X_train, self.y_train)
