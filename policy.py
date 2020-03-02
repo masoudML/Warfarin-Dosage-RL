@@ -42,13 +42,13 @@ class ContextualRandomForestSLPolicy(ContextualPolicy):
 
     def __init__(self, data):
         self.data_prepocessor = DataPipeline()
-        self.X_train, self.X_val, self.y_train, self.y_val = data[0], data[1], data[2], data[3]
+        self.X_train, self.X_val, self.y_train, self.y_val = data
         self.RF_model = RandomForestClassifier(random_state=1,
                                           verbose=0)
 
         param_grid = {
             'n_estimators': [50, 100, 150],
-            'max_depth': [5, 6, 7],
+            'max_depth': [5, 6, 7, 8, 9 , 10],
         }
 
         RF_model = RandomForestClassifier(random_state=1,

@@ -17,23 +17,28 @@ class WarfarinDosageRecommendation(object):
     def calculateReward(self, action, y):
         return 0 if int(action) == int(y) else -1
 
-    def train(self):
+    def train(self, epochs=1):
 
         # TODO: shuffle
 
-        rewards = []
+
         predictions = []
         X_train = self.X_train.values
         y_train = self.y_train.values
-        for t in range(self.train_size):
-            X = X_train[t,:]
-            y = y_train[t]
-            action = self.policy.choose(X)
-            reward = self.calculateReward(action, y)
 
-            predictions.append(action)
-            self.policy.updateParameters(X, action, reward)
-            rewards.append(reward)
+        X_train, y_train = shuffle(X_train, y_train, random_state=123)
+
+        for epoch in range(epochs):
+            rewards = []
+            for t in range(self.train_size):
+                X = X_train[t,:]
+                y = y_train[t]
+                action = self.policy.choose(X)
+                reward = self.calculateReward(action, y)
+
+                predictions.append(action)
+                self.policy.updateParameters(X, action, reward)
+                rewards.append(reward)
 
         return rewards
 
@@ -59,15 +64,17 @@ if __name__ == '__main__':
     X_train, X_val, y_train, y_val = data_prepocessor.loadAndPrepData()
     linUCB_policy = ContextualLinearUCBPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))
-    rewards = warfarin.train()
+    rewards = warfarin.train(epochs=10)
+    print('LinUCB: Avg Reward on the train: {} '.format(np.mean(rewards)))
     rewards = warfarin.eval()
-
-    print(np.mean(rewards))
+    print('LinUCB: Avg Reward on the val: {} '.format(np.mean(rewards)))
 
     rf_policy = ContextualRandomForestSLPolicy(data=(X_train, X_val, y_train, y_val))
     warfarin = WarfarinDosageRecommendation(rf_policy, data=(X_train, X_val, y_train, y_val))
     rewards = warfarin.train()
+    print('RF: Avg Reward on the train: {} '.format(np.mean(rewards)))
     rewards = warfarin.eval()
+    print('RF: Avg Reward on the val: {} '.format(np.mean(rewards)))
     print(np.mean(rewards))
 
 
