@@ -1,5 +1,10 @@
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, RandomForestClassifier
+from sklearn.preprocessing import MinMaxScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 class DataPipeline(object):
     def __init__(self):
@@ -118,8 +123,57 @@ class DataPipeline(object):
         return new_df
 
 
-    def train_test_split(self,data):
-        pass
+    def train_test_split(self,X,Y):
+        X_train, X_val, y_train, y_val = train_test_split(X, Y, test_size=0.1, random_state=1)
+
+        return (X_train, X_val, y_train, y_val)
+
+    def loadAndPrepData(self):
+        data = pd.read_csv('warfarin_pca_bert.csv')
+        dp = DataPipeline()
+        data = dp.null_label_cleaner(data)
+        data = dp.unnamed_cleaner(data)
+        data = dp.more_than_half_na_dropper(data)
+        data = dp.impute_data(data)
+        data = dp.convert_labels_to_catg(data)
+        data = dp.convert_to_one_hot(data)
+        Y = data['Therapeutic Dose of Warfarin']
+        X = data.loc[:, data.columns != 'Therapeutic Dose of Warfarin']
+        if False:
+            self.performFeatureAnalysisUsingRandomForest(X,Y, plot_rankings=True)
+        return self.train_test_split(X,Y)
+
+    def rank_to_dict(self, ranks, names, order=1):
+        minmax = MinMaxScaler()
+        ranks = minmax.fit_transform(order * np.array([ranks]).T).T[0]
+        ranks = map(lambda x: round(x, 2), ranks)
+        return dict(zip(names, ranks))
+
+    def performFeatureAnalysisUsingRandomForest(self, X_train, y_train, plot_rankings=False):
+        #### Feature Importance Rankings using Random Forest
+        RF_model = RandomForestClassifier(n_estimators=50,
+                                          random_state=1,
+                                          min_samples_leaf=8,
+                                          max_depth=6,
+                                          verbose=0)
+        RF_model.fit(X_train, y_train)
+
+        ranks = self.rank_to_dict(RF_model.feature_importances_, X_train.columns)
+        ranks = dict(zip(X_train.columns, RF_model.feature_importances_))
+
+        ranks_df = pd.DataFrame(list(ranks.items()), columns=['Feature', 'Ranking'])
+        ranks_df = ranks_df.sort_values('Ranking', ascending=False)
+
+        print(ranks_df)
+
+        if (plot_rankings):
+            rc = {'axes.labelsize': 14, 'font.size': 14, 'legend.fontsize': 14, 'axes.titlesize': 14}
+            sns.set(rc=rc)
+            sns.catplot(x="Ranking", y="Feature", data=ranks_df, kind="bar",
+                        height=12, aspect=1.9, palette='coolwarm')
+            plt.savefig('RFFeatureRankingPlot.png')
+            plt.clf()
+
 
 def main():
     data = pd.read_csv('warfarin_pca_bert.csv')
