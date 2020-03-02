@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.utils import shuffle
 from datapreprocessor import DataPreProcessor
 from data_pipeline import DataPipeline
-from policy import ContextualRandomForestSLPolicy, LinUCBPolicy
+from policy import ContextualRandomForestSLPolicy, ContextualLinearUCBPolicy
 
 class WarfarinDosageRecommendation(object):
 
@@ -57,7 +57,7 @@ class WarfarinDosageRecommendation(object):
 if __name__ == '__main__':
     data_prepocessor = DataPipeline()
     X_train, X_val, y_train, y_val = data_prepocessor.loadAndPrepData()
-    linUCB_policy = LinUCBPolicy(features_size=X_train.shape[1], num_actions=3)
+    linUCB_policy = ContextualLinearUCBPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))
     rewards = warfarin.train()
     rewards = warfarin.eval()

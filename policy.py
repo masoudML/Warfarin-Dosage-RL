@@ -67,7 +67,7 @@ class ContextualRandomForestSLPolicy(ContextualPolicy):
         pass
 
 
-class LinUCBPolicy(ContextualPolicy):
+class ContextualLinearUCBPolicy(ContextualPolicy):
     def __init__(self, features_size, num_actions=3):
         self.alpha = 0.5
         self.num_actions = num_actions
