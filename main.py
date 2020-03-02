@@ -64,7 +64,7 @@ if __name__ == '__main__':
     X_train, X_val, y_train, y_val = data_prepocessor.loadAndPrepData()
     linUCB_policy = ContextualLinearUCBPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))
-    rewards = warfarin.train(epochs=10)
+    rewards = warfarin.train(epochs=1)
     print('LinUCB: Avg Reward on the train: {} '.format(np.mean(rewards)))
     rewards = warfarin.eval()
     print('LinUCB: Avg Reward on the val: {} '.format(np.mean(rewards)))

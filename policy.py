@@ -69,14 +69,16 @@ class ContextualRandomForestSLPolicy(ContextualPolicy):
 
 class ContextualLinearUCBPolicy(ContextualPolicy):
     def __init__(self, features_size, num_actions=3):
-        self.alpha = 0.5
+        self.alpha = 1
         self.num_actions = num_actions
         self.features_size = features_size
         self.theta = np.zeros((self.num_actions, self.features_size))
-        self.A = [np.eye(self.features_size) for _ in range(self.num_actions)]
+        self.A = [np.identity(self.features_size) for _ in range(self.num_actions)]
         self.b = [np.zeros((self.features_size, 1)) for _ in range(self.num_actions)]
-
+        self.time_step = 0
     def choose(self, X):
+        self.alpha = min(1, 1/np.sqrt(self.time_step + 0.000001))
+        self.time_step += 1
         p = []
         for action in range(self.num_actions):
             A_a_inv = np.linalg.inv(self.A[action])
@@ -88,5 +90,5 @@ class ContextualLinearUCBPolicy(ContextualPolicy):
         return a_star
 
     def updateParameters(self, X, action, reward):
-        self.A[action] += np.dot(X, X.T)
+        self.A[action] += np.outer(X, X)
         self.b[action] += reward * X.reshape(X.shape[0],1)
