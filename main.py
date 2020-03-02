@@ -17,7 +17,7 @@ class WarfarinDosageRecommendation(object):
     def calculateReward(self, action, y):
         return 0 if int(action) == int(y) else -1
 
-    def run(self):
+    def train(self):
 
         # TODO: shuffle
 
@@ -37,18 +37,37 @@ class WarfarinDosageRecommendation(object):
 
         return rewards
 
+    def eval(self):
+        rewards = []
+        predictions = []
+        X_val = self.X_val.values
+        y_val = self.y_val.values
+        for t in range(self.test_size):
+            X = X_val[t, :]
+            y = y_val[t]
+            action = self.policy.choose(X)
+            reward = self.calculateReward(action, y)
+
+            predictions.append(action)
+            #self.policy.updateParameters(X, action, reward)
+            rewards.append(reward)
+
+        return rewards
+
 if __name__ == '__main__':
     data_prepocessor = DataPipeline()
     X_train, X_val, y_train, y_val = data_prepocessor.loadAndPrepData()
     linUCB_policy = LinUCBPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))
-    rewards = warfarin.run()
+    rewards = warfarin.train()
+    rewards = warfarin.eval()
 
     print(np.mean(rewards))
 
     rf_policy = ContextualRandomForestSLPolicy(data=(X_train, X_val, y_train, y_val))
     warfarin = WarfarinDosageRecommendation(rf_policy, data=(X_train, X_val, y_train, y_val))
-    rewards = warfarin.run()
+    rewards = warfarin.train()
+    rewards = warfarin.eval()
     print(np.mean(rewards))
 
 

@@ -77,12 +77,14 @@ class LinUCBPolicy(ContextualPolicy):
         self.b = [np.zeros((self.features_size, 1)) for _ in range(self.num_actions)]
 
     def choose(self, X):
+        p = []
         for action in range(self.num_actions):
             A_a_inv = np.linalg.inv(self.A[action])
-            theta_hat = np.linalg.inv(self.A[action]).dot(self.b[action])
+            theta_hat = A_a_inv.dot(self.b[action])
             p_t_a = theta_hat.T.dot(X) + self.alpha * np.sqrt(X.T.dot(A_a_inv).dot(X))
+            p.append(p_t_a)
 
-        a_star = np.argmax(p_t_a)
+        a_star = np.argmax(p)
         return a_star
 
     def updateParameters(self, X, action, reward):
