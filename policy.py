@@ -7,6 +7,8 @@ import numpy as np
 
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LogisticRegression
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
@@ -43,7 +45,7 @@ class ContextualRandomForestSLPolicy(ContextualPolicy):
     def __init__(self, data):
         self.data_prepocessor = DataPipeline()
         self.X_train, self.X_val, self.y_train, self.y_val = data
-        self.RF_model = RandomForestClassifier(random_state=1,
+        self.RF_model = LogisticRegression(random_state=1,
                                           verbose=0)
 
         param_grid = {
@@ -66,6 +68,23 @@ class ContextualRandomForestSLPolicy(ContextualPolicy):
     def updateParameters(self, X, action, reward):
         pass
 
+
+class ContextualLogisticRegressionSLPolicy(ContextualPolicy):
+
+    def __init__(self, data):
+        self.data_prepocessor = DataPipeline()
+        self.X_train, self.X_val, self.y_train, self.y_val = data
+        self.lr_model = LogisticRegression(random_state=1,multi_class='multinomial',solver='newton-cg',
+                                          verbose=0)
+
+        self.lr_model.fit(self.X_train, self.y_train)
+
+    def choose(self, X):
+        prediction = self.lr_model.predict(X.reshape(1,X.shape[0]))
+        return int(prediction)
+
+    def updateParameters(self, X, action, reward):
+        pass
 
 class ContextualLinearUCBPolicy(ContextualPolicy):
     def __init__(self, features_size, num_actions=3):

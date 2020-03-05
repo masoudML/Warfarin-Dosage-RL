@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.utils import shuffle
 from datapreprocessor import DataPreProcessor
 from data_pipeline import DataPipeline
-from policy import ContextualRandomForestSLPolicy, ContextualLinearUCBPolicy
+from policy import ContextualRandomForestSLPolicy, ContextualLinearUCBPolicy, ContextualLogisticRegressionSLPolicy
 from sklearn.metrics import precision_recall_fscore_support, classification_report, accuracy_score
 
 class WarfarinDosageRecommendation(object):
@@ -80,6 +80,21 @@ if __name__ == '__main__':
     print('accuracy: ' + str(accuracy_score(y_val, predictions)))
     print(classification_report(y_val, predictions))
     print('LinUCB: Avg Reward on the val: {} '.format(np.mean(rewards)))
+
+    print('########################### Logistic (Softmax) Regression ########################################')
+    print('##### Train #### ')
+    softmax_policy = ContextualLogisticRegressionSLPolicy(data=(X_train, X_val, y_train, y_val))
+    warfarin = WarfarinDosageRecommendation(softmax_policy, data=(X_train, X_val, y_train, y_val))
+    rewards, predictions = warfarin.train()
+    print('accuracy: ' + str(accuracy_score(y_train, predictions)))
+    print(classification_report(y_train, predictions))
+    print('Softmax: Avg Reward on the train: {} '.format(np.mean(rewards)))
+
+    print('##### VAL #### ')
+    rewards, predictions = warfarin.eval()
+    print('accuracy: ' + str(accuracy_score(y_val, predictions)))
+    print(classification_report(y_val, predictions))
+    print('Softmax: Avg Reward on the val: {} '.format(np.mean(rewards)))
 
     print('########################### Random Forest ########################################')
     print('##### Train #### ')
