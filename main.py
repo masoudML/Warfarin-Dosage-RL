@@ -4,6 +4,7 @@ from sklearn.utils import shuffle
 from datapreprocessor import DataPreProcessor
 from data_pipeline import DataPipeline
 from policy import ContextualRandomForestSLPolicy, ContextualLinearUCBPolicy
+from sklearn.metrics import precision_recall_fscore_support, classification_report, accuracy_score
 
 class WarfarinDosageRecommendation(object):
 
@@ -22,13 +23,14 @@ class WarfarinDosageRecommendation(object):
         # TODO: shuffle
 
 
-        predictions = []
+
         X_train = self.X_train.values
         y_train = self.y_train.values
 
-        X_train, y_train = shuffle(X_train, y_train, random_state=123)
+        #X_train, y_train = shuffle(X_train, y_train, random_state=123)
 
         for epoch in range(epochs):
+            predictions = []
             rewards = []
             for t in range(self.train_size):
                 X = X_train[t,:]
@@ -40,7 +42,7 @@ class WarfarinDosageRecommendation(object):
                 self.policy.updateParameters(X, action, reward)
                 rewards.append(reward)
 
-        return rewards
+        return (rewards, predictions)
 
     def eval(self):
         rewards = []
@@ -57,24 +59,40 @@ class WarfarinDosageRecommendation(object):
             #self.policy.updateParameters(X, action, reward)
             rewards.append(reward)
 
-        return rewards
+        return (rewards, predictions)
 
 if __name__ == '__main__':
     data_prepocessor = DataPipeline()
     X_train, X_val, y_train, y_val = data_prepocessor.loadAndPrepData()
     linUCB_policy = ContextualLinearUCBPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))
-    rewards = warfarin.train(epochs=1)
+    rewards, predictions = warfarin.train(epochs=10)
+    print('########################### LinUCB ########################################')
+    print('##### Train #### ')
+    print('accuracy: ' + str(accuracy_score(y_train, predictions)))
+    print(classification_report(y_train, predictions))
+
     print('LinUCB: Avg Reward on the train: {} '.format(np.mean(rewards)))
-    rewards = warfarin.eval()
+
+    print('##### VAL #### ')
+    rewards, predictions = warfarin.eval()
+
+    print('accuracy: ' + str(accuracy_score(y_val, predictions)))
+    print(classification_report(y_val, predictions))
     print('LinUCB: Avg Reward on the val: {} '.format(np.mean(rewards)))
 
+    print('########################### Random Forest ########################################')
+    print('##### Train #### ')
     rf_policy = ContextualRandomForestSLPolicy(data=(X_train, X_val, y_train, y_val))
     warfarin = WarfarinDosageRecommendation(rf_policy, data=(X_train, X_val, y_train, y_val))
-    rewards = warfarin.train()
+    rewards, predictions = warfarin.train()
+    print('accuracy: ' + str(accuracy_score(y_train, predictions)))
+    print(classification_report(y_train, predictions))
     print('RF: Avg Reward on the train: {} '.format(np.mean(rewards)))
-    rewards = warfarin.eval()
-    print('RF: Avg Reward on the val: {} '.format(np.mean(rewards)))
-    print(np.mean(rewards))
 
+    print('##### VAL #### ')
+    rewards, predictions = warfarin.eval()
+    print('accuracy: ' + str(accuracy_score(y_val, predictions)))
+    print(classification_report(y_val, predictions))
+    print('RF: Avg Reward on the val: {} '.format(np.mean(rewards)))
 

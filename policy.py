@@ -47,8 +47,8 @@ class ContextualRandomForestSLPolicy(ContextualPolicy):
                                           verbose=0)
 
         param_grid = {
-            'n_estimators': [50, 100, 150],
-            'max_depth': [5, 6, 7, 8, 9 , 10],
+            'n_estimators': [50, 100, 150, 200],
+            'max_depth': [5, 6, 7, 8, 9 , 10, 12, 15],
         }
 
         RF_model = RandomForestClassifier(random_state=1,

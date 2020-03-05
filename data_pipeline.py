@@ -139,8 +139,10 @@ class DataPipeline(object):
         data = dp.convert_to_one_hot(data)
         Y = data['Therapeutic Dose of Warfarin']
         X = data.loc[:, data.columns != 'Therapeutic Dose of Warfarin']
-        if False:
-            self.performFeatureAnalysisUsingRandomForest(X,Y, plot_rankings=True)
+        if True:
+            rankings = self.performFeatureAnalysisUsingRandomForest(X,Y, plot_rankings=True)
+            cols = list(rankings.keys())
+            X = X[cols]
         return self.train_test_split(X,Y)
 
     def rank_to_dict(self, ranks, names, order=1):
@@ -154,12 +156,16 @@ class DataPipeline(object):
         RF_model = RandomForestClassifier(n_estimators=50,
                                           random_state=1,
                                           min_samples_leaf=8,
-                                          max_depth=6,
+                                          max_depth=10,
                                           verbose=0)
         RF_model.fit(X_train, y_train)
 
-        ranks = self.rank_to_dict(RF_model.feature_importances_, X_train.columns)
         ranks = dict(zip(X_train.columns, RF_model.feature_importances_))
+        items = list(ranks.items())
+        for k,v in items:
+            if v < .005:
+                del ranks[k]
+
 
         ranks_df = pd.DataFrame(list(ranks.items()), columns=['Feature', 'Ranking'])
         ranks_df = ranks_df.sort_values('Ranking', ascending=False)
@@ -174,6 +180,8 @@ class DataPipeline(object):
             plt.savefig('RFFeatureRankingPlot.png')
             plt.clf()
 
+        return ranks
+
 
 def main():
     data = pd.read_csv('warfarin_pca_bert.csv')
@@ -185,7 +193,7 @@ def main():
     data = dp.convert_labels_to_catg(data)
     data = dp.convert_to_one_hot(data)
 
-    print(data)
+    #print(data)
 
 
 
