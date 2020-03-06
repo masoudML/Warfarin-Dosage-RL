@@ -129,3 +129,16 @@ if __name__ == '__main__':
     print(classification_report(y_val, predictions))
     print('RF: Avg Reward on the val: {} '.format(np.mean(rewards)))
 
+    lin_policy = ContextualLinearSVMSLPolicy(data=(X_train, X_val, y_train, y_val))
+    warfarin = WarfarinDosageRecommendation(lin_policy, data=(X_train, X_val, y_train, y_val))
+    rewards = warfarin.train()
+    print('Lin: Avg Reward on the train: {} '.format(np.mean(rewards)))
+    rewards = warfarin.eval()
+    print('Lin: Avg Reward on the val: {} '.format(np.mean(rewards)))
+
+    svm_policy = ContextualSVMSLPolicy(data=(X_train, X_val, y_train, y_val))
+    warfarin = WarfarinDosageRecommendation(svm_policy, data=(X_train, X_val, y_train, y_val))
+    rewards = warfarin.train()
+    print('SVM: Avg Reward on the train: {} '.format(np.mean(rewards)))
+    rewards = warfarin.eval()
+    print('SVM: Avg Reward on the val: {} '.format(np.mean(rewards)))

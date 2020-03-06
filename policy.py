@@ -1,7 +1,5 @@
-
-from datapreprocessor import DataPreProcessor
 from data_pipeline import DataPipeline
-
+from sklearn.svm import SVC, LinearSVC
 import pandas as pd
 import numpy as np
 
@@ -146,3 +144,49 @@ class ThompsonSamplingContextualBanditPolicy(Policy):
         self.B[action]  += np.outer(X, X)
         self.f[action] += reward * X
         self.mu_hat[action] = np.dot(np.linalg.inv(self.B[action]), self.f[action])
+
+class ContextualLinearSVMSLPolicy(Policy):
+    def __init__(self,data):
+        self.data_prepocessor = DataPipeline()
+        self.X_train, self.X_val, self.y_train, self.y_val = data
+        self.LinearModel = LinearSVC()
+
+        self.LinearModel.fit(self.X_train,self.y_train)
+
+    def choose(self, X):
+        prediction = self.LinearModel.predict(X.reshape(1,X.shape[0]))
+        return prediction
+
+    def updateParameters(self, X, action, reward):
+        pass
+
+class ContextualSVMSLPolicy(Policy):
+    def __init__(self, data):
+        self.data_prepocessor = DataPipeline()
+        self.X_train, self.X_val, self.y_train, self.y_val = data
+        self.lr_model = LogisticRegression(random_state=1,multi_class='multinomial',solver='newton-cg',
+                                          verbose=0)
+
+        self.lr_model.fit(self.X_train, self.y_train)
+
+    def choose(self, X):
+        prediction = self.lr_model.predict(X.reshape(1,X.shape[0]))
+
+        param_grid = {
+            'C': [1, 2, 3],
+            'degree': [3, 4, 5, 6, 7 , 8],
+        }
+
+        SVM_model = SVC(gamma='auto')
+
+        SVM_Tuned = GridSearchCV(estimator=SVM_model, param_grid=param_grid, cv=StratifiedKFold(3))
+        SVM_Tuned.fit(self.X_train, self.y_train)
+
+        self.SVM_model = SVM_Tuned
+
+    def choose(self, X):
+        prediction = self.SVM_model.predict(X.reshape(1,X.shape[0]))
+        return int(prediction)
+
+    def updateParameters(self, X, action, reward):
+        pass
