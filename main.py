@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.utils import shuffle
 from datapreprocessor import DataPreProcessor
 from data_pipeline import DataPipeline
-from policy import ContextualRandomForestSLPolicy, ContextualLinearUCBPolicy, ContextualLogisticRegressionSLPolicy
+from policy import RandomForestSLPolicy, ContextualLinearUCBPolicy, LogisticRegressionSLPolicy, ThompsonSamplingContextualBanditPolicy
 from sklearn.metrics import precision_recall_fscore_support, classification_report, accuracy_score
 
 class WarfarinDosageRecommendation(object):
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     X_train, X_val, y_train, y_val = data_prepocessor.loadAndPrepData()
     linUCB_policy = ContextualLinearUCBPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))
-    rewards, predictions = warfarin.train(epochs=10)
+    rewards, predictions = warfarin.train(epochs=5)
     print('########################### LinUCB ########################################')
     print('##### Train #### ')
     print('accuracy: ' + str(accuracy_score(y_train, predictions)))
@@ -81,9 +81,26 @@ if __name__ == '__main__':
     print(classification_report(y_val, predictions))
     print('LinUCB: Avg Reward on the val: {} '.format(np.mean(rewards)))
 
+    print('\n')
+    print('########################### TS for Contextual Bandits ########################################')
+    print('##### Train #### ')
+    t_policy = ThompsonSamplingContextualBanditPolicy(features_size=X_train.shape[1], num_actions=3)
+    warfarin = WarfarinDosageRecommendation(t_policy, data=(X_train, X_val, y_train, y_val))
+    rewards, predictions = warfarin.train(epochs=5)
+    print('accuracy: ' + str(accuracy_score(y_train, predictions)))
+    print(classification_report(y_train, predictions))
+    print('TS for Contextual Bandits: Avg Reward on the train: {} '.format(np.mean(rewards)))
+
+    print('##### VAL #### ')
+    rewards, predictions = warfarin.eval()
+    print('accuracy: ' + str(accuracy_score(y_val, predictions)))
+    print(classification_report(y_val, predictions))
+    print('TS for Contextual Bandits: Avg Reward on the val: {} '.format(np.mean(rewards)))
+
+    print('\n')
     print('########################### Logistic (Softmax) Regression ########################################')
     print('##### Train #### ')
-    softmax_policy = ContextualLogisticRegressionSLPolicy(data=(X_train, X_val, y_train, y_val))
+    softmax_policy = LogisticRegressionSLPolicy(data=(X_train, X_val, y_train, y_val))
     warfarin = WarfarinDosageRecommendation(softmax_policy, data=(X_train, X_val, y_train, y_val))
     rewards, predictions = warfarin.train()
     print('accuracy: ' + str(accuracy_score(y_train, predictions)))
@@ -96,9 +113,10 @@ if __name__ == '__main__':
     print(classification_report(y_val, predictions))
     print('Softmax: Avg Reward on the val: {} '.format(np.mean(rewards)))
 
+    print('\n')
     print('########################### Random Forest ########################################')
     print('##### Train #### ')
-    rf_policy = ContextualRandomForestSLPolicy(data=(X_train, X_val, y_train, y_val))
+    rf_policy = RandomForestSLPolicy(data=(X_train, X_val, y_train, y_val))
     warfarin = WarfarinDosageRecommendation(rf_policy, data=(X_train, X_val, y_train, y_val))
     rewards, predictions = warfarin.train()
     print('accuracy: ' + str(accuracy_score(y_train, predictions)))

@@ -21,11 +21,10 @@ from sklearn.feature_selection import SelectFromModel
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler
+from scipy.stats import beta
 
-class ContextualPolicy(object):
-    """
-    Abstract class for a contextual multi-armed bandit policy/algorithm
-    """
+
+class Policy(object):
 
     def __init__(self):
         raise NotImplementedError
@@ -40,7 +39,7 @@ class ContextualPolicy(object):
         raise NotImplementedError
 
 
-class ContextualRandomForestSLPolicy(ContextualPolicy):
+class RandomForestSLPolicy(Policy):
 
     def __init__(self, data):
         self.data_prepocessor = DataPipeline()
@@ -69,7 +68,7 @@ class ContextualRandomForestSLPolicy(ContextualPolicy):
         pass
 
 
-class ContextualLogisticRegressionSLPolicy(ContextualPolicy):
+class LogisticRegressionSLPolicy(Policy):
 
     def __init__(self, data):
         self.data_prepocessor = DataPipeline()
@@ -86,9 +85,10 @@ class ContextualLogisticRegressionSLPolicy(ContextualPolicy):
     def updateParameters(self, X, action, reward):
         pass
 
-class ContextualLinearUCBPolicy(ContextualPolicy):
+class ContextualLinearUCBPolicy(Policy):
     def __init__(self, features_size, num_actions=3):
         self.alpha = 1
+        self.delta = 0.05
         self.num_actions = num_actions
         self.features_size = features_size
         self.theta = np.zeros((self.num_actions, self.features_size))
@@ -96,8 +96,9 @@ class ContextualLinearUCBPolicy(ContextualPolicy):
         self.b = [np.zeros((self.features_size, 1)) for _ in range(self.num_actions)]
         self.time_step = 0
     def choose(self, X):
-        self.alpha = min(1, 1/np.sqrt(self.time_step + 0.000001))
         self.time_step += 1
+        self.alpha = 1 + np.sqrt(np.log(2*self.time_step/self.delta)/2)
+
         p = []
         for action in range(self.num_actions):
             A_a_inv = np.linalg.inv(self.A[action])
@@ -111,3 +112,37 @@ class ContextualLinearUCBPolicy(ContextualPolicy):
     def updateParameters(self, X, action, reward):
         self.A[action] += np.outer(X, X)
         self.b[action] += reward * X.reshape(X.shape[0],1)
+
+
+class ThompsonSamplingContextualBanditPolicy(Policy):
+    def __init__(self, features_size, num_actions=3):
+        ### hyper-parameters
+        #### from the paper: v = R . sqrt((24/eps) d log(1/delta))
+        self.R = 0.1
+        self.eps = 0.01
+        self.delta = 0.05
+        self.v = 1
+        self.num_actions = num_actions
+        self.features_size = features_size
+        self.B = [np.identity(self.features_size) for _ in range(self.num_actions)]
+        self.mu_hat = [np.zeros((self.features_size,1)) for _ in range(self.num_actions)]
+        self.f = [np.zeros(self.features_size) for _ in range(self.num_actions)]
+        self.time_step = 0
+    def choose(self, X):
+        self.time_step += 1
+        self.v = self.R * np.sqrt(9 * '''self.feature_size''' * np.log(max(1.1,np.log(self.time_step/self.delta)))) ### d feature size can be removed, R is the range but that would be in extract
+
+        p = []
+        for action in range(self.num_actions):
+            mu_tilda = np.random.multivariate_normal(mean=self.mu_hat[action].reshape(self.features_size),
+                                                     cov=((self.v ** 2) * np.linalg.inv(self.B[action])))
+            p_t_a = np.dot(X.T, mu_tilda)
+            p.append(p_t_a)
+
+        a_star = np.argmax(p)
+        return a_star
+
+    def updateParameters(self, X, action, reward):
+        self.B[action]  += np.outer(X, X)
+        self.f[action] += reward * X
+        self.mu_hat[action] = np.dot(np.linalg.inv(self.B[action]), self.f[action])
