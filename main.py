@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
 from sklearn.utils import shuffle
-from datapreprocessor import DataPreProcessor
 from data_pipeline import DataPipeline
-from policy import RandomForestSLPolicy, ContextualLinearUCBPolicy, LogisticRegressionSLPolicy, ThompsonSamplingContextualBanditPolicy
+from policy import *
 from sklearn.metrics import precision_recall_fscore_support, classification_report, accuracy_score
 
 class WarfarinDosageRecommendation(object):

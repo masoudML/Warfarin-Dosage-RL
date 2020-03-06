@@ -128,7 +128,7 @@ class ThompsonSamplingContextualBanditPolicy(Policy):
         self.time_step = 0
     def choose(self, X):
         self.time_step += 1
-        self.v = self.R * np.sqrt(9 * '''self.feature_size''' * np.log(max(1.1,np.log(self.time_step/self.delta)))) ### d feature size can be removed, R is the range but that would be in extract
+        self.v = self.R * np.sqrt(9 * self.features_size * np.log(max(1.1,np.log(self.time_step/self.delta)))) ### d feature size can be removed, R is the range but that would be in extract
 
         p = []
         for action in range(self.num_actions):
@@ -164,14 +164,9 @@ class ContextualSVMSLPolicy(Policy):
     def __init__(self, data):
         self.data_prepocessor = DataPipeline()
         self.X_train, self.X_val, self.y_train, self.y_val = data
-        self.lr_model = LogisticRegression(random_state=1,multi_class='multinomial',solver='newton-cg',
-                                          verbose=0)
-
-        self.lr_model.fit(self.X_train, self.y_train)
+        self.SVM_model=SVC()
 
     def choose(self, X):
-        prediction = self.lr_model.predict(X.reshape(1,X.shape[0]))
-
         param_grid = {
             'C': [1, 2, 3],
             'degree': [3, 4, 5, 6, 7 , 8],
