@@ -61,7 +61,7 @@ class WarfarinDosageRecommendation(object):
         return (rewards, predictions)
 
 if __name__ == '__main__':
-    data_prepocessor = DataPipeline()
+    data_prepocessor = DataPipeline(bert_on=False)
     X_train, X_val, y_train, y_val = data_prepocessor.loadAndPrepData()
     linUCB_policy = ContextualLinearUCBPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))

@@ -7,16 +7,28 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 class DataPipeline(object):
-    def __init__(self):
+    def __init__(self,bert_on=True):
         #No Init needed
-        pass
+        self.bert_on = bert_on
+
     def null_label_cleaner(self,data):
         """
         data is a dataframe
         """
         data=data.dropna(subset = ['Therapeutic Dose of Warfarin'])
+
         #Remove Comorbidities since it's encoded as BERT features in our dataframe
         data = data.drop("Comorbidities", axis=1)
+
+
+        #Bert Features Disabled
+        if self.bert_on == False:
+            data.drop([feature+str(x) for x in range(0,90)], axis=1)        
+
+        print('Final Columns List****')
+        for col in data.columns: 
+            print(col)
+
         return data
 
     def unnamed_cleaner(self,data):
@@ -70,9 +82,9 @@ class DataPipeline(object):
         #Method - create vector from 0 to 8
         list_indication = []
         for row in data['Indication for Warfarin Treatment'].astype(str):
-            print(row)
+            #print(row)
             row_np = np.zeros(9)
-            print(row)
+            #print(row)
             for i in range(0,9):
                 if row.find(str(i))>-1:
                     row_np[i] = 1
