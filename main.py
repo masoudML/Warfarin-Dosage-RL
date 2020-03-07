@@ -26,7 +26,7 @@ class WarfarinDosageRecommendation(object):
         X_train = self.X_train.values
         y_train = self.y_train.values
 
-        #X_train, y_train = shuffle(X_train, y_train, random_state=123)
+        X_train, y_train = shuffle(X_train, y_train, random_state=12)
 
         for epoch in range(epochs):
             predictions = []

@@ -164,9 +164,7 @@ class ContextualSVMSLPolicy(Policy):
     def __init__(self, data):
         self.data_prepocessor = DataPipeline()
         self.X_train, self.X_val, self.y_train, self.y_val = data
-        self.SVM_model=SVC()
 
-    def choose(self, X):
         param_grid = {
             'C': [1, 2, 3],
             'degree': [3, 4, 5, 6, 7 , 8],
