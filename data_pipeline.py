@@ -7,28 +7,16 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 class DataPipeline(object):
-    def __init__(self,bert_on=True):
+    def __init__(self):
         #No Init needed
-        self.bert_on = bert_on
-
+        pass
     def null_label_cleaner(self,data):
         """
         data is a dataframe
         """
         data=data.dropna(subset = ['Therapeutic Dose of Warfarin'])
-
         #Remove Comorbidities since it's encoded as BERT features in our dataframe
         data = data.drop("Comorbidities", axis=1)
-
-
-        #Bert Features Disabled
-        if self.bert_on == False:
-            data.drop([feature+str(x) for x in range(0,90)], axis=1)        
-
-        print('Final Columns List****')
-        for col in data.columns: 
-            print(col)
-
         return data
 
     def unnamed_cleaner(self,data):
@@ -82,9 +70,9 @@ class DataPipeline(object):
         #Method - create vector from 0 to 8
         list_indication = []
         for row in data['Indication for Warfarin Treatment'].astype(str):
-            #print(row)
+            print(row)
             row_np = np.zeros(9)
-            #print(row)
+            print(row)
             for i in range(0,9):
                 if row.find(str(i))>-1:
                     row_np[i] = 1
@@ -135,8 +123,8 @@ class DataPipeline(object):
         return new_df
 
 
-    def train_test_split(self,X,Y):
-        X_train, X_val, y_train, y_val = train_test_split(X, Y, test_size=0.1, random_state=1)
+    def train_test_split(self,X,Y, seed=0):
+        X_train, X_val, y_train, y_val = train_test_split(X, Y, test_size=0.01, random_state=1)
 
         return (X_train, X_val, y_train, y_val)
 

@@ -1,5 +1,6 @@
+
 from data_pipeline import DataPipeline
-from sklearn.svm import SVC, LinearSVC
+
 import pandas as pd
 import numpy as np
 
@@ -21,11 +22,13 @@ import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler
 from scipy.stats import beta
 
+from sklearn.svm import SVC, LinearSVC
+
 
 class Policy(object):
 
     def __init__(self):
-        raise NotImplementedError
+        self.regret = []
 
 
     def choose(self, X):
@@ -37,9 +40,11 @@ class Policy(object):
         raise NotImplementedError
 
 
+
 class RandomForestSLPolicy(Policy):
 
     def __init__(self, data):
+        super().__init__()
         self.data_prepocessor = DataPipeline()
         self.X_train, self.X_val, self.y_train, self.y_val = data
         self.RF_model = LogisticRegression(random_state=1,
@@ -69,6 +74,7 @@ class RandomForestSLPolicy(Policy):
 class LogisticRegressionSLPolicy(Policy):
 
     def __init__(self, data):
+        super().__init__()
         self.data_prepocessor = DataPipeline()
         self.X_train, self.X_val, self.y_train, self.y_val = data
         self.lr_model = LogisticRegression(random_state=1,multi_class='multinomial',solver='newton-cg',
@@ -83,8 +89,10 @@ class LogisticRegressionSLPolicy(Policy):
     def updateParameters(self, X, action, reward):
         pass
 
+
 class ContextualLinearUCBPolicy(Policy):
     def __init__(self, features_size, num_actions=3):
+        super().__init__()
         self.alpha = 1
         self.delta = 0.05
         self.num_actions = num_actions
@@ -93,6 +101,7 @@ class ContextualLinearUCBPolicy(Policy):
         self.A = [np.identity(self.features_size) for _ in range(self.num_actions)]
         self.b = [np.zeros((self.features_size, 1)) for _ in range(self.num_actions)]
         self.time_step = 0
+        self.last_p = None
     def choose(self, X):
         self.time_step += 1
         self.alpha = 1 + np.sqrt(np.log(2*self.time_step/self.delta)/2)
@@ -105,6 +114,8 @@ class ContextualLinearUCBPolicy(Policy):
             p.append(p_t_a)
 
         a_star = np.argmax(p)
+        self.regret.append(np.mean(p[a_star] - p))
+        self.last_p = p
         return a_star
 
     def updateParameters(self, X, action, reward):
@@ -114,9 +125,10 @@ class ContextualLinearUCBPolicy(Policy):
 
 class ThompsonSamplingContextualBanditPolicy(Policy):
     def __init__(self, features_size, num_actions=3):
+        super().__init__()
         ### hyper-parameters
         #### from the paper: v = R . sqrt((24/eps) d log(1/delta))
-        self.R = 0.1
+        self.R = .01
         self.eps = 0.01
         self.delta = 0.05
         self.v = 1
@@ -128,7 +140,8 @@ class ThompsonSamplingContextualBanditPolicy(Policy):
         self.time_step = 0
     def choose(self, X):
         self.time_step += 1
-        self.v = self.R * np.sqrt(9 * self.features_size * np.log(max(1.1,np.log(self.time_step/self.delta)))) ### d feature size can be removed, R is the range but that would be in extract
+        #self.v = self.R * np.sqrt(9 * '''self.feature_size''' * np.log(max(1.1,np.log(self.time_step/self.delta)))) ### d feature size can be removed, R is the range but that would be in extract
+        self.v = self.R * np.sqrt(9 * self.features_size * np.log(self.time_step / self.delta))
 
         p = []
         for action in range(self.num_actions):
@@ -138,6 +151,8 @@ class ThompsonSamplingContextualBanditPolicy(Policy):
             p.append(p_t_a)
 
         a_star = np.argmax(p)
+        self.regret.append(np.mean(p[a_star] - p))
+        self.last_p = p
         return a_star
 
     def updateParameters(self, X, action, reward):
