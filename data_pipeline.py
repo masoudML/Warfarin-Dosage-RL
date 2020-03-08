@@ -152,7 +152,7 @@ class DataPipeline(object):
         data = dp.convert_to_one_hot(data)
         Y = data['Therapeutic Dose of Warfarin']
         Y1 = data['Cont_Warfrain']
-        X = data.loc[:, (data.columns != 'Therapeutic Dose of Warfarin') ^ (data.columns != 'Cont_Warfrain')]
+        X = data.loc[:, (data.columns != 'Therapeutic Dose of Warfarin') | (data.columns != 'Cont_Warfrain')]
         if True:
             rankings = self.performFeatureAnalysisUsingRandomForest(X,Y, plot_rankings=True)
             cols = list(rankings.keys())
