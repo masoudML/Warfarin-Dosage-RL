@@ -107,10 +107,11 @@ class DataPipeline(object):
 
 
     def convert_labels_to_catg(self,data):
-        #low: less than 21 mg/week
-        # medium: 21-49 mg/week
-        # high: more than 49 mg/week
+        # low: less than 21 mg/week -- 14
+        # medium: 21-49 mg/week -- 31
+        # high: more than 49 mg/week -- 62
         print(data)
+        data['Cont_Warfrain'] = data['Therapeutic Dose of Warfarin']
         data.loc[(data['Therapeutic Dose of Warfarin'] < 21),'Therapeutic Dose of Warfarin']=0
         data.loc[((data['Therapeutic Dose of Warfarin'] >= 21) & (data['Therapeutic Dose of Warfarin'] < 49)),'Therapeutic Dose of Warfarin']=1
         data.loc[(data['Therapeutic Dose of Warfarin'] >= 49),'Therapeutic Dose of Warfarin']=2
@@ -135,10 +136,10 @@ class DataPipeline(object):
         return new_df
 
 
-    def train_test_split(self,X,Y):
-        X_train, X_val, y_train, y_val = train_test_split(X, Y, test_size=0.1, random_state=1)
+    def train_test_split(self,X,Y,Y1):
+        X_train, X_val, y_train, y_val, y1_train, y1_val = train_test_split(X, Y, Y1, test_size=0.1, random_state=1)
 
-        return (X_train, X_val, y_train, y_val)
+        return (X_train, X_val, y_train, y_val, y1_train, y1_val)
 
     def loadAndPrepData(self):
         data = pd.read_csv('warfarin_pca_bert.csv')
@@ -150,12 +151,14 @@ class DataPipeline(object):
         data = dp.convert_labels_to_catg(data)
         data = dp.convert_to_one_hot(data)
         Y = data['Therapeutic Dose of Warfarin']
-        X = data.loc[:, data.columns != 'Therapeutic Dose of Warfarin']
+        Y1 = data['Cont_Warfrain']
+        X = data.loc[:, (data.columns != 'Therapeutic Dose of Warfarin')]
+        X = X.loc[:, (X.columns != 'Cont_Warfrain')]
         if True:
             rankings = self.performFeatureAnalysisUsingRandomForest(X,Y, plot_rankings=True)
             cols = list(rankings.keys())
             X = X[cols]
-        return self.train_test_split(X,Y)
+        return self.train_test_split(X,Y,Y1)
 
     def rank_to_dict(self, ranks, names, order=1):
         minmax = MinMaxScaler()
