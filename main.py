@@ -31,7 +31,8 @@ class WarfarinDosageRecommendation(object):
             #print('AVG DOSE',self.avg_dose)
             #print('y is',int(y))
             #print('y1 is',y1)
-            return -abs(self.avg_dose[int(y)]-y1)
+            #return -abs(self.avg_dose[action]-y1)
+            return -abs(self.avg_dose[action]-self.avg_dose[int(y)])
 
 
 

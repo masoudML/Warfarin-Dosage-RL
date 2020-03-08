@@ -107,9 +107,9 @@ class DataPipeline(object):
 
 
     def convert_labels_to_catg(self,data):
-        #low: less than 21 mg/week
-        # medium: 21-49 mg/week
-        # high: more than 49 mg/week
+        # low: less than 21 mg/week -- 14
+        # medium: 21-49 mg/week -- 31
+        # high: more than 49 mg/week -- 62
         print(data)
         data['Cont_Warfrain'] = data['Therapeutic Dose of Warfarin']
         data.loc[(data['Therapeutic Dose of Warfarin'] < 21),'Therapeutic Dose of Warfarin']=0
@@ -152,7 +152,8 @@ class DataPipeline(object):
         data = dp.convert_to_one_hot(data)
         Y = data['Therapeutic Dose of Warfarin']
         Y1 = data['Cont_Warfrain']
-        X = data.loc[:, (data.columns != 'Therapeutic Dose of Warfarin') | (data.columns != 'Cont_Warfrain')]
+        X = data.loc[:, (data.columns != 'Therapeutic Dose of Warfarin')]
+        X = X.loc[:, (X.columns != 'Cont_Warfrain')]
         if True:
             rankings = self.performFeatureAnalysisUsingRandomForest(X,Y, plot_rankings=True)
             cols = list(rankings.keys())
