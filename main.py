@@ -70,37 +70,63 @@ if __name__ == '__main__':
     ts_regrets = []
     linUCB_cum_errors = []
     ts_cum_errors = []
+    softmax_cum_errors = []
+    RF_cum_errors = []
     linUCB_policy = ContextualLinearUCBPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))
 
     t_policy = ThompsonSamplingContextualBanditPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin_t = WarfarinDosageRecommendation(t_policy, data=(X_train, X_val, y_train, y_val))
 
+    softmax_policy = LogisticRegressionSLPolicy(data=(X_train, X_val, y_train, y_val))
+    warfarin_soft = WarfarinDosageRecommendation(softmax_policy, data=(X_train, X_val, y_train, y_val))
+
+    rf_policy = RandomForestSLPolicy(data=(X_train, X_val, y_train, y_val))
+    warfarin_rf = WarfarinDosageRecommendation(rf_policy, data=(X_train, X_val, y_train, y_val))
 
     for i in range(len(seeds)):
         print(' ########## seed {} = {} ###############'.format(i, seeds[i]))
-        X_train, y_train = shuffle(X_train, y_train, random_state=seeds[i])
+        X_train_shuffled, y_train_shuffled = shuffle(X_train, y_train, random_state=seeds[i])
         #linUCB_policy = ContextualLinearUCBPolicy(features_size=X_train.shape[1], num_actions=3)
         #warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))
-        rewards, predictions, cum_errors = warfarin.train(X_train, y_train, epochs=2)
+        rewards, predictions, cum_errors = warfarin.train(X_train_shuffled, y_train_shuffled, epochs=1)
         linUCB_cum_errors.append(cum_errors)
         print('########################### LinUCB ########################################')
         print('##### Train #### ')
-        print('accuracy: ' + str(accuracy_score(y_train, predictions)))
-        print(classification_report(y_train, predictions))
+        print('accuracy: ' + str(accuracy_score(y_train_shuffled, predictions)))
+        print(classification_report(y_train_shuffled, predictions))
         print('LinUCB: Avg Reward on the train: {} '.format(np.mean(rewards)))
         linUCB_regrets.append(linUCB_policy.regret)
 
         #t_policy = ThompsonSamplingContextualBanditPolicy(features_size=X_train.shape[1], num_actions=3)
         #warfarin = WarfarinDosageRecommendation(t_policy, data=(X_train, X_val, y_train, y_val))
-        rewards, predictions, cum_errors = warfarin_t.train(X_train, y_train, epochs=2)
+        rewards, predictions, cum_errors = warfarin_t.train(X_train_shuffled, y_train_shuffled, epochs=1)
         ts_cum_errors.append(cum_errors)
         print('########################### TS Contextual bandit ########################################')
         print('##### Train #### ')
-        print('accuracy: ' + str(accuracy_score(y_train, predictions)))
-        print(classification_report(y_train, predictions))
+        print('accuracy: ' + str(accuracy_score(y_train_shuffled, predictions)))
+        print(classification_report(y_train_shuffled, predictions))
         print('TS: Avg Reward on the train: {} '.format(np.mean(rewards)))
         ts_regrets.append(t_policy.regret)
+
+        print('########################### Logistic (Softmax) Regression ########################################')
+        print('##### Train #### ')
+
+        rewards, predictions, cum_errors = warfarin_soft.train(X_train_shuffled, y_train_shuffled)
+        softmax_cum_errors.append(cum_errors)
+        print('accuracy: ' + str(accuracy_score(y_train_shuffled, predictions)))
+        print(classification_report(y_train_shuffled, predictions))
+        print('Softmax: Avg Reward on the train: {} '.format(np.mean(rewards)))
+
+        print('########################### Random Forest ########################################')
+        print('##### Train #### ')
+
+        rewards, predictions, cum_errors = warfarin_rf.train(X_train_shuffled, y_train_shuffled)
+        RF_cum_errors.append(cum_errors)
+        print('accuracy: ' + str(accuracy_score(y_train_shuffled, predictions)))
+        print(classification_report(y_train_shuffled, predictions))
+        print('RF: Avg Reward on the train: {} '.format(np.mean(rewards)))
+
         gc.collect()
 
     linUCB_regrets = np.array(linUCB_regrets)
@@ -129,19 +155,34 @@ if __name__ == '__main__':
     ts_cum_Errors = pd.DataFrame(data=ts_cum_errors.T, columns=list(range(ts_cum_errors.shape[0])),
                              index=list(range(ts_cum_errors.shape[1])))
 
+    softmax_cum_errors = np.array(softmax_cum_errors)
+    softmax_cum_Errors = pd.DataFrame(data=softmax_cum_errors.T, columns=list(range(softmax_cum_errors.shape[0])),
+                                     index=list(range(softmax_cum_errors.shape[1])))
+
+    RF_cum_errors = np.array(RF_cum_errors)
+    RF_cum_Errors = pd.DataFrame(data=RF_cum_errors.T, columns=list(range(RF_cum_errors.shape[0])),
+                                 index=list(range(RF_cum_errors.shape[1])))
+
     fig, ax = plt.subplots(figsize=(15, 10))
     sns.tsplot(data=linUCB_cum_Errors.values.T, ci=95, estimator=np.mean, color='m', ax=ax, legend=True).set_title(
         'Algs Cumulative Errors %')
     sns.tsplot(data=ts_cum_Errors.values.T, ci=95, estimator=np.mean, color='r', ax=ax, legend=True)
+    sns.tsplot(data=softmax_cum_Errors.values.T, ci=95, estimator=np.mean, color='g', ax=ax, legend=True)
+    sns.tsplot(data=RF_cum_Errors.values.T, ci=95, estimator=np.mean, color='b', ax=ax, legend=True)
+
     ax.set_xlim(-500, None)
     ax.set(xlabel='Time', ylabel='Cumulative Error %')
-    ax.legend(loc=0, labels=["LinUCB", "TS-Contextual-Bandit"])
+    ax.legend(loc=0, labels=["LinUCB", "TS-Contextual-Bandit","Softmax Regression", "Random Forest"])
     fig.savefig("errors_all.png")
     fig.clf()
 
+    ### Test on the validation set - multiple episodes
+
+    X_train, X_val, y_train, y_val = data_prepocessor.loadAndPrepData(test_size=0.1)
+
     linUCB_policy = ContextualLinearUCBPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))
-    rewards, predictions, cum_errors = warfarin.train(X_train, y_train, epochs=10)
+    rewards, predictions, cum_errors = warfarin.train(X_train, y_train, epochs=5)
     linUCB_regret = linUCB_policy.regret
     print('########################### LinUCB ########################################')
     print('##### Train #### ')
@@ -162,7 +203,7 @@ if __name__ == '__main__':
     print('##### Train #### ')
     t_policy = ThompsonSamplingContextualBanditPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(t_policy, data=(X_train, X_val, y_train, y_val))
-    rewards, predictions, cum_errors = warfarin.train(X_train, y_train, epochs=10)
+    rewards, predictions, cum_errors = warfarin.train(X_train, y_train, epochs=5)
     ts_regret = t_policy.regret
     print('accuracy: ' + str(accuracy_score(y_train, predictions)))
     print(classification_report(y_train, predictions))

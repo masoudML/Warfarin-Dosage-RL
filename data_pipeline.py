@@ -123,12 +123,12 @@ class DataPipeline(object):
         return new_df
 
 
-    def train_test_split(self,X,Y, seed=0):
-        X_train, X_val, y_train, y_val = train_test_split(X, Y, test_size=0.01, random_state=1)
+    def train_test_split(self,X,Y, test_size=0.01, seed=0):
+        X_train, X_val, y_train, y_val = train_test_split(X, Y, test_size=test_size, random_state=1)
 
         return (X_train, X_val, y_train, y_val)
 
-    def loadAndPrepData(self):
+    def loadAndPrepData(self, test_size=0.01):
         data = pd.read_csv('warfarin_pca_bert.csv')
         dp = DataPipeline()
         data = dp.null_label_cleaner(data)
@@ -143,7 +143,7 @@ class DataPipeline(object):
             rankings = self.performFeatureAnalysisUsingRandomForest(X,Y, plot_rankings=True)
             cols = list(rankings.keys())
             X = X[cols]
-        return self.train_test_split(X,Y)
+        return self.train_test_split(X,Y, test_size=test_size)
 
     def rank_to_dict(self, ranks, names, order=1):
         minmax = MinMaxScaler()
