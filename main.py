@@ -26,8 +26,8 @@ class WarfarinDosageRecommendation(object):
         X_train = X_train.values
         y_train = y_train.values
 
-        errors = [0,1,1]
-        cum_errors = [0,0.5,0.66]
+        errors = []
+        cum_errors = []
 
         for epoch in range(epochs):
             predictions = []
