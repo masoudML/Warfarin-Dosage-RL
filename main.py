@@ -7,6 +7,7 @@ from sklearn.metrics import precision_recall_fscore_support, classification_repo
 import matplotlib.pyplot as plt
 import seaborn as sns
 import gc
+from sklearn.metrics import precision_recall_fscore_support
 
 class WarfarinDosageRecommendation(object):
 
@@ -25,8 +26,8 @@ class WarfarinDosageRecommendation(object):
         X_train = X_train.values
         y_train = y_train.values
 
-        errors = []
-        cum_errors = []
+        errors = [0,1,1]
+        cum_errors = [0,0.5,0.66]
 
         for epoch in range(epochs):
             predictions = []
@@ -63,7 +64,8 @@ class WarfarinDosageRecommendation(object):
         return (rewards, predictions)
 
 if __name__ == '__main__':
-    seeds = [1,12,123,1234, 12345, 1234545, 0, 2, 234, 2345, 23454, 345, 3456, 345656, 456, 45656, 7483, 7590 , 789, 7890 ]
+    #seeds = [1,12,123,1234, 12345, 1234545, 0, 2, 234, 2345, 23454, 345, 3456, 345656, 456, 45656, 7483, 7590 , 789, 7890 ]
+    seeds = np.random.randint(2 ** 30, size=20)
     data_prepocessor = DataPipeline()
     X_train, X_val, y_train, y_val = data_prepocessor.loadAndPrepData()
     linUCB_regrets = []
@@ -84,6 +86,12 @@ if __name__ == '__main__':
     rf_policy = RandomForestSLPolicy(data=(X_train, X_val, y_train, y_val))
     warfarin_rf = WarfarinDosageRecommendation(rf_policy, data=(X_train, X_val, y_train, y_val))
 
+    linUCB_accuracy, ts_accuracy, softmax_accuracy, rf_accuracy = [],[],[],[]
+    linUCB_precision, linUCB_recall, linUCB_fscore = [],[],[]
+    ts_precision, ts_recall, ts_fscore = [], [], []
+    softmax_precision,softmax_recall, softmax_fscore = [], [], []
+    rf_precision,rf_recall, rf_fscore = [], [], []
+
     for i in range(len(seeds)):
         print(' ########## seed {} = {} ###############'.format(i, seeds[i]))
         X_train_shuffled, y_train_shuffled = shuffle(X_train, y_train, random_state=seeds[i])
@@ -93,8 +101,15 @@ if __name__ == '__main__':
         linUCB_cum_errors.append(cum_errors)
         print('########################### LinUCB ########################################')
         print('##### Train #### ')
-        print('accuracy: ' + str(accuracy_score(y_train_shuffled, predictions)))
+        accuracy = accuracy_score(y_train_shuffled, predictions)
+        linUCB_accuracy.append(accuracy)
+        print('accuracy: ' + str(accuracy))
         print(classification_report(y_train_shuffled, predictions))
+        precision, recall, fscore, _ = precision_recall_fscore_support(y_train_shuffled, predictions, average='weighted')
+        linUCB_precision.append(precision)
+        linUCB_recall.append(recall)
+        linUCB_fscore.append(fscore)
+
         print('LinUCB: Avg Reward on the train: {} '.format(np.mean(rewards)))
         linUCB_regrets.append(linUCB_policy.regret)
 
@@ -104,8 +119,15 @@ if __name__ == '__main__':
         ts_cum_errors.append(cum_errors)
         print('########################### TS Contextual bandit ########################################')
         print('##### Train #### ')
-        print('accuracy: ' + str(accuracy_score(y_train_shuffled, predictions)))
+        accuracy = accuracy_score(y_train_shuffled, predictions)
+        ts_accuracy.append(accuracy)
+        print('accuracy: ' + str(accuracy))
         print(classification_report(y_train_shuffled, predictions))
+        precision, recall, fscore, _ = precision_recall_fscore_support(y_train_shuffled, predictions,
+                                                                       average='weighted')
+        ts_precision.append(precision)
+        ts_recall.append(recall)
+        ts_fscore.append(fscore)
         print('TS: Avg Reward on the train: {} '.format(np.mean(rewards)))
         ts_regrets.append(t_policy.regret)
 
@@ -114,8 +136,15 @@ if __name__ == '__main__':
 
         rewards, predictions, cum_errors = warfarin_soft.train(X_train_shuffled, y_train_shuffled)
         softmax_cum_errors.append(cum_errors)
-        print('accuracy: ' + str(accuracy_score(y_train_shuffled, predictions)))
+        accuracy = accuracy_score(y_train_shuffled, predictions)
+        softmax_accuracy.append(accuracy)
+        print('accuracy: ' + str(accuracy))
         print(classification_report(y_train_shuffled, predictions))
+        precision, recall, fscore, _ = precision_recall_fscore_support(y_train_shuffled, predictions,
+                                                                       average='weighted')
+        softmax_precision.append(precision)
+        softmax_recall.append(recall)
+        softmax_fscore.append(fscore)
         print('Softmax: Avg Reward on the train: {} '.format(np.mean(rewards)))
 
         print('########################### Random Forest ########################################')
@@ -123,11 +152,29 @@ if __name__ == '__main__':
 
         rewards, predictions, cum_errors = warfarin_rf.train(X_train_shuffled, y_train_shuffled)
         RF_cum_errors.append(cum_errors)
-        print('accuracy: ' + str(accuracy_score(y_train_shuffled, predictions)))
+        accuracy = accuracy_score(y_train_shuffled, predictions)
+        rf_accuracy.append(accuracy)
+        print('accuracy: ' + str(accuracy))
         print(classification_report(y_train_shuffled, predictions))
+        precision, recall, fscore, _ = precision_recall_fscore_support(y_train_shuffled, predictions,
+                                                                       average='weighted')
+        rf_precision.append(precision)
+        rf_recall.append(recall)
+        rf_fscore.append(fscore)
         print('RF: Avg Reward on the train: {} '.format(np.mean(rewards)))
 
         gc.collect()
+
+    results_table = pd.DataFrame(columns=['Model', 'Accuracy', 'Weighted_Precision', 'Weighted_Recall', 'Weighted_Fscore'])
+    results_table = results_table.append(pd.DataFrame({'Model': ['LinUCB','TS','Softmax','RF'],
+                  'Accuracy': [np.mean(linUCB_accuracy),np.mean(ts_accuracy),np.mean(softmax_accuracy),np.mean(rf_accuracy)],
+                  'Weighted_Precision': [np.mean(linUCB_precision),np.mean(ts_precision),np.mean(softmax_precision),np.mean(rf_precision)],
+                  'Weighted_Recall': [np.mean(linUCB_recall),np.mean(ts_recall),np.mean(softmax_recall),np.mean(rf_recall)],
+                  'Weighted_Fscore': [np.mean(linUCB_fscore), np.mean(ts_fscore),np.mean(softmax_fscore), np.mean(rf_fscore)]}))
+
+
+    print('########### Results Table ########## ')
+    print(results_table)
 
     linUCB_regrets = np.array(linUCB_regrets)
     linUCB_Regret = pd.DataFrame( data = np.cumsum(linUCB_regrets, axis=1).T, columns=list(range(linUCB_regrets.shape[0])) ,
@@ -165,13 +212,13 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots(figsize=(15, 10))
     sns.tsplot(data=linUCB_cum_Errors.values.T, ci=95, estimator=np.mean, color='m', ax=ax, legend=True).set_title(
-        'Algs Cumulative Errors %')
+        'Algs Cumulative Errors Rate')
     sns.tsplot(data=ts_cum_Errors.values.T, ci=95, estimator=np.mean, color='r', ax=ax, legend=True)
     sns.tsplot(data=softmax_cum_Errors.values.T, ci=95, estimator=np.mean, color='g', ax=ax, legend=True)
     sns.tsplot(data=RF_cum_Errors.values.T, ci=95, estimator=np.mean, color='b', ax=ax, legend=True)
 
     ax.set_xlim(-500, None)
-    ax.set(xlabel='Time', ylabel='Cumulative Error %')
+    ax.set(xlabel='Time', ylabel='Cumulative Error Rate')
     ax.legend(loc=0, labels=["LinUCB", "TS-Contextual-Bandit","Softmax Regression", "Random Forest"])
     fig.savefig("errors_all.png")
     fig.clf()
