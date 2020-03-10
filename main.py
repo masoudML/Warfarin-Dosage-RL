@@ -2,12 +2,21 @@ import numpy as np
 import pandas as pd
 from sklearn.utils import shuffle
 from data_pipeline import DataPipeline
-from policy import RandomForestSLPolicy, ContextualLinearUCBPolicy, LogisticRegressionSLPolicy, ThompsonSamplingContextualBanditPolicy
+from policy import RandomForestSLPolicy, ContextualLinearUCBPolicy, LogisticRegressionSLPolicy, ThompsonSamplingContextualBanditPolicy, ClinicalBaseline
 from sklearn.metrics import precision_recall_fscore_support, classification_report, accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 import gc
 from sklearn.metrics import precision_recall_fscore_support
+
+from data_pipeline import DataPipeline
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+
+
+
 
 class WarfarinDosageRecommendation(object):
 
@@ -65,8 +74,9 @@ class WarfarinDosageRecommendation(object):
 
 if __name__ == '__main__':
     #seeds = [1,12,123,1234, 12345, 1234545, 0, 2, 234, 2345, 23454, 345, 3456, 345656, 456, 45656, 7483, 7590 , 789, 7890 ]
-    seeds = np.random.randint(2 ** 30, size=20)
-    data_prepocessor = DataPipeline()
+    #seeds = np.random.randint(2 ** 30, size=20)
+    seeds = np.random.randint(2 ** 30, size=2)
+    data_prepocessor = DataPipeline(bert_on=False)
     X_train, X_val, y_train, y_val = data_prepocessor.loadAndPrepData()
     linUCB_regrets = []
     ts_regrets = []
@@ -74,6 +84,7 @@ if __name__ == '__main__':
     ts_cum_errors = []
     softmax_cum_errors = []
     RF_cum_errors = []
+    baseline_cum_errors = []
     linUCB_policy = ContextualLinearUCBPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))
 
@@ -86,11 +97,15 @@ if __name__ == '__main__':
     rf_policy = RandomForestSLPolicy(data=(X_train, X_val, y_train, y_val))
     warfarin_rf = WarfarinDosageRecommendation(rf_policy, data=(X_train, X_val, y_train, y_val))
 
-    linUCB_accuracy, ts_accuracy, softmax_accuracy, rf_accuracy = [],[],[],[]
+    bl_policy = ClinicalBaseline()
+    #warfarin_bl = WarfarinDosageRecommendation(bl_policy, data=(X_train, X_val, y_train, y_val))
+
+    linUCB_accuracy, ts_accuracy, softmax_accuracy, rf_accuracy, bl_accuracy = [],[],[],[], []
     linUCB_precision, linUCB_recall, linUCB_fscore = [],[],[]
     ts_precision, ts_recall, ts_fscore = [], [], []
     softmax_precision,softmax_recall, softmax_fscore = [], [], []
     rf_precision,rf_recall, rf_fscore = [], [], []
+    bl_precision,bl_recall, bl_fscore = [], [], []
 
     for i in range(len(seeds)):
         print(' ########## seed {} = {} ###############'.format(i, seeds[i]))
@@ -163,14 +178,33 @@ if __name__ == '__main__':
         rf_fscore.append(fscore)
         print('RF: Avg Reward on the train: {} '.format(np.mean(rewards)))
 
+
+
+        print('########################### BASELINE ########################################')
+        print('##### Train #### ')
+
+        #rewards, predictions, cum_errors = warfarin_bl.train(X_train_shuffled, y_train_shuffled)
+        y_train_shuffled, rewards, predictions, cum_errors = bl_policy.train(i)
+        baseline_cum_errors.append(cum_errors)
+        accuracy = accuracy_score(y_train_shuffled, predictions)
+        bl_accuracy.append(accuracy)
+        print('accuracy: ' + str(accuracy))
+        print(classification_report(y_train_shuffled, predictions))
+        precision, recall, fscore, _ = precision_recall_fscore_support(y_train_shuffled, predictions,
+                                                                       average='weighted')
+        bl_precision.append(precision)
+        bl_recall.append(recall)
+        bl_fscore.append(fscore)
+        print('BASELINE: Avg Reward on the train: {} '.format(np.mean(rewards)))
+
         gc.collect()
 
     results_table = pd.DataFrame(columns=['Model', 'Accuracy', 'Weighted_Precision', 'Weighted_Recall', 'Weighted_Fscore'])
-    results_table = results_table.append(pd.DataFrame({'Model': ['LinUCB','TS','Softmax','RF'],
-                  'Accuracy': [np.mean(linUCB_accuracy),np.mean(ts_accuracy),np.mean(softmax_accuracy),np.mean(rf_accuracy)],
-                  'Weighted_Precision': [np.mean(linUCB_precision),np.mean(ts_precision),np.mean(softmax_precision),np.mean(rf_precision)],
-                  'Weighted_Recall': [np.mean(linUCB_recall),np.mean(ts_recall),np.mean(softmax_recall),np.mean(rf_recall)],
-                  'Weighted_Fscore': [np.mean(linUCB_fscore), np.mean(ts_fscore),np.mean(softmax_fscore), np.mean(rf_fscore)]}))
+    results_table = results_table.append(pd.DataFrame({'Model': ['LinUCB','TS','Softmax','RF','BL'],
+                  'Accuracy': [np.mean(linUCB_accuracy),np.mean(ts_accuracy),np.mean(softmax_accuracy),np.mean(rf_accuracy),np.mean(bl_accuracy)],
+                  'Weighted_Precision': [np.mean(linUCB_precision),np.mean(ts_precision),np.mean(softmax_precision),np.mean(rf_precision),np.mean(bl_precision)],
+                  'Weighted_Recall': [np.mean(linUCB_recall),np.mean(ts_recall),np.mean(softmax_recall),np.mean(rf_recall),np.mean(bl_precision)],
+                  'Weighted_Fscore': [np.mean(linUCB_fscore), np.mean(ts_fscore),np.mean(softmax_fscore), np.mean(rf_fscore),np.mean(bl_fscore)]}))
 
 
     print('########### Results Table ########## ')
@@ -194,6 +228,11 @@ if __name__ == '__main__':
     fig.savefig("regret_all.png")
     fig.clf()
 
+    baseline_cum_errors = np.array(baseline_cum_errors)
+    baseline_cum_errors = pd.DataFrame(data=baseline_cum_errors.T, columns=list(range(baseline_cum_errors.shape[0])),
+                                 index=list(range(baseline_cum_errors.shape[1])))
+
+
     linUCB_cum_errors = np.array(linUCB_cum_errors)
     linUCB_cum_Errors = pd.DataFrame(data=linUCB_cum_errors.T, columns=list(range(linUCB_cum_errors.shape[0])),
                                  index=list(range(linUCB_cum_errors.shape[1])))
@@ -216,6 +255,9 @@ if __name__ == '__main__':
     sns.tsplot(data=ts_cum_Errors.values.T, ci=95, estimator=np.mean, color='r', ax=ax, legend=True)
     sns.tsplot(data=softmax_cum_Errors.values.T, ci=95, estimator=np.mean, color='g', ax=ax, legend=True)
     sns.tsplot(data=RF_cum_Errors.values.T, ci=95, estimator=np.mean, color='b', ax=ax, legend=True)
+    #sns.tsplot(data=baseline_cum_errors.values.T, ci=95, estimator=np.mean, color='y', ax=ax, legend=True)
+
+
 
     ax.set_xlim(-500, None)
     ax.set(xlabel='Time', ylabel='Cumulative Error Rate')

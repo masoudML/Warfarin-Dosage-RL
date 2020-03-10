@@ -7,13 +7,17 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 class DataPipeline(object):
-    def __init__(self):
+    def __init__(self, bert_on=True):
         #No Init needed
-        pass
+        self.bert_on = bert_on
+
     def null_label_cleaner(self,data):
         """
         data is a dataframe
         """
+        if self.bert_on == False:
+            data.drop(['feature'+str(x) for x in range(0,90)], axis=1)
+
         data=data.dropna(subset = ['Therapeutic Dose of Warfarin'])
         #Remove Comorbidities since it's encoded as BERT features in our dataframe
         data = data.drop("Comorbidities", axis=1)
