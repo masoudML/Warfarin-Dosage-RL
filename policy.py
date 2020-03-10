@@ -128,7 +128,7 @@ class ThompsonSamplingContextualBanditPolicy(Policy):
         super().__init__()
         ### hyper-parameters
         #### from the paper: v = R . sqrt((24/eps) d log(1/delta))
-        self.R = .01
+        self.R = 0.01
         self.eps = 0.01
         self.delta = 0.05
         self.v = 1
@@ -140,9 +140,9 @@ class ThompsonSamplingContextualBanditPolicy(Policy):
         self.time_step = 0
     def choose(self, X):
         self.time_step += 1
-        self.v = self.R * np.sqrt(9 * np.log(self.time_step/self.delta)) ### d feature size can be removed, R is the range but that would be in extract
+        #self.v = self.R * np.sqrt(9 * np.max(np.log(1.1), np.log(1/(self.time_step*self.delta)))) ### d feature size can be removed, R is the range but that would be in extract
         #self.v = self.R * np.sqrt(9 * self.features_size * np.log(self.time_step / self.delta))
-        #self.v = self.R * np.sqrt(9 * np.log(self.time_step / self.delta))
+        self.v = self.R * np.sqrt(9 * self.features_size * max(np.log(1.001),np.log(1/(self.time_step * self.delta))))
 
         p = []
         for action in range(self.num_actions):
@@ -196,6 +196,28 @@ class ContextualSVMSLPolicy(Policy):
     def choose(self, X):
         prediction = self.SVM_model.predict(X.reshape(1,X.shape[0]))
         return int(prediction)
+
+    def updateParameters(self, X, action, reward):
+        pass
+
+
+class FixedBaseline(Policy):
+    def __init__(self):
+        pass
+
+    def choose(self, X):
+        return 1
+
+    def updateParameters(self, X, action, reward):
+        pass
+
+class ClinicalBaseline(object):
+    def __init__(self):
+       pass
+
+
+    def train(self, X, seed):
+        pass
 
     def updateParameters(self, X, action, reward):
         pass
