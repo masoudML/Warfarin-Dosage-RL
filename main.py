@@ -76,7 +76,7 @@ if __name__ == '__main__':
     #seeds = [1,12,123,1234, 12345, 1234545, 0, 2, 234, 2345, 23454, 345, 3456, 345656, 456, 45656, 7483, 7590 , 789, 7890 ]
     #seeds = np.random.randint(2 ** 30, size=20)
     seeds = np.random.randint(2 ** 30, size=2)
-    data_prepocessor = DataPipeline(bert_on=False)
+    data_prepocessor = DataPipeline()#(bert_on=False)
     X_train, X_val, y_train, y_val = data_prepocessor.loadAndPrepData()
     linUCB_regrets = []
     ts_regrets = []
