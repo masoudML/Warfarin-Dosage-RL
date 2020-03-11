@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.utils import shuffle
 from data_pipeline import DataPipeline
-from policy import RandomForestSLPolicy, ContextualLinearUCBPolicy, LogisticRegressionSLPolicy, ThompsonSamplingContextualBanditPolicy, ClinicalBaseline
+from policy import RandomForestSLPolicy, ContextualLinearUCBPolicy, LogisticRegressionSLPolicy, ThompsonSamplingContextualBanditPolicy, ClinicalBaseline, FixedBaseline
 from sklearn.metrics import precision_recall_fscore_support, classification_report, accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     baseline_cum_errors = []
     fixed_cum_errors = []
 
-    fixed_policy = FixedBaseline(features_size=X_train.shape[1], num_actions=3)
+    fixed_policy = FixedBaseline()
     fixed_warfarin = WarfarinDosageRecommendation(fixed_policy, data=(X_train, X_val, y_train, y_val))
 
 
