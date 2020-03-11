@@ -222,15 +222,17 @@ class ClinicalBaseline(object):
             total=0
             cumm_r = []
             curr_e = []
-            error = 0
+            
+            error = []
             for p,g in zip(pred,gt):
                 #print(p,g)
                 if p!=g:
                     reward-=1
-                    error+=1
+                
+                error.append(int(p!=g))
                 total+=1
                 cumm_r.append(reward)
-                curr_e.append(error)
+                curr_e.append(np.sum(error)/len(error))
             print(reward,total)
             return cumm_r,curr_e,reward/total
 
