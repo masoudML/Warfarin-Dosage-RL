@@ -87,6 +87,9 @@ if __name__ == '__main__':
     baseline_cum_errors = []
     fixed_cum_errors = []
 
+    fixed_policy = FixedBaseline()
+    warfarin = WarfarinDosageRecommendation(fixed_policy, data=(X_train, X_val, y_train, y_val))
+
     linUCB_policy = ContextualLinearUCBPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))
 
