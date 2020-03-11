@@ -88,7 +88,7 @@ if __name__ == '__main__':
     fixed_cum_errors = []
 
     fixed_policy = FixedBaseline()
-    warfarin = WarfarinDosageRecommendation(fixed_policy, data=(X_train, X_val, y_train, y_val))
+    fixed_warfarin = WarfarinDosageRecommendation(fixed_policy, data=(X_train, X_val, y_train, y_val))
 
     linUCB_policy = ContextualLinearUCBPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))
@@ -277,7 +277,7 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots(figsize=(15, 10))
     sns.tsplot(data=linUCB_cum_Errors.values.T, ci=95, estimator=np.mean, color='m', ax=ax, legend=True).set_title(
-        'Algs Cumulative Errors Rate')
+        'Algs Errors Rate')
     sns.tsplot(data=ts_cum_Errors.values.T, ci=95, estimator=np.mean, color='r', ax=ax, legend=True)
     sns.tsplot(data=softmax_cum_Errors.values.T, ci=95, estimator=np.mean, color='g', ax=ax, legend=True)
     sns.tsplot(data=RF_cum_Errors.values.T, ci=95, estimator=np.mean, color='b', ax=ax, legend=True)
@@ -287,7 +287,7 @@ if __name__ == '__main__':
 
 
     ax.set_xlim(-500, None)
-    ax.set(xlabel='Time', ylabel='Cumulative Error Rate')
+    ax.set(xlabel='Time', ylabel='Error Rate %')
     ax.legend(loc=0, labels=["LinUCB", "TS-Contextual-Bandit","Softmax Regression", "Random Forest", "Clinical Baseline","Fixed Baseline"])
     fig.savefig("errors_all.png")
     fig.clf()
