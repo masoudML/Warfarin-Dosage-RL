@@ -87,10 +87,6 @@ if __name__ == '__main__':
     baseline_cum_errors = []
     fixed_cum_errors = []
 
-    fixed_policy = FixedBaseline()
-    fixed_warfarin = WarfarinDosageRecommendation(fixed_policy, data=(X_train, X_val, y_train, y_val))
-
-
     linUCB_policy = ContextualLinearUCBPolicy(features_size=X_train.shape[1], num_actions=3)
     warfarin = WarfarinDosageRecommendation(linUCB_policy, data=(X_train, X_val, y_train, y_val))
 
@@ -191,13 +187,13 @@ if __name__ == '__main__':
         print('##### Train #### ')
 
         #rewards, predictions, cum_errors = warfarin_bl.train(X_train_shuffled, y_train_shuffled)
-        y_train_shuffled, rewards, predictions, cum_errors = bl_policy.train(i)
+        y_train_baseline, rewards, predictions, cum_errors = bl_policy.train(i)
         baseline_cum_errors.append(cum_errors)
-        accuracy = accuracy_score(y_train_shuffled, predictions)
+        accuracy = accuracy_score(y_train_baseline, predictions)
         bl_accuracy.append(accuracy)
         print('accuracy: ' + str(accuracy))
-        print(classification_report(y_train_shuffled, predictions))
-        precision, recall, fscore, _ = precision_recall_fscore_support(y_train_shuffled, predictions,
+        print(classification_report(y_train_baseline, predictions))
+        precision, recall, fscore, _ = precision_recall_fscore_support(y_train_baseline, predictions,
                                                                        average='weighted')
         bl_precision.append(precision)
         bl_recall.append(recall)
@@ -364,3 +360,17 @@ if __name__ == '__main__':
     print(classification_report(y_val, predictions))
     print('RF: Avg Reward on the val: {} '.format(np.mean(rewards)))
 
+    print('########################### Fixed ########################################')
+    print('##### Train #### ')
+    fixed_policy = FixedBaseline(data=(X_train, X_val, y_train, y_val))
+    warfarin = WarfarinDosageRecommendation(fixed_policy, data=(X_train, X_val, y_train, y_val))
+    rewards, predictions, cum_errors = warfarin.train(X_train, y_train)
+    print('accuracy: ' + str(accuracy_score(y_train, predictions)))
+    print(classification_report(y_train, predictions))
+    print('RF: Avg Reward on the train: {} '.format(np.mean(rewards)))
+
+    print('##### VAL #### ')
+    rewards, predictions = warfarin.eval()
+    print('accuracy: ' + str(accuracy_score(y_val, predictions)))
+    print(classification_report(y_val, predictions))
+    print('Fixed: Avg Reward on the val: {} '.format(np.mean(rewards)))
